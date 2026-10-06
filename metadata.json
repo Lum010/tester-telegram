@@ -1,0 +1,6 @@
+{
+  "name": "PulseFest - Telegram Concert & Festival Radar",
+  "description": "Mobile app integrated with Telegram Bot API for real-time trending concert updates, custom festival alerts by genre, location & dates, and instant push notifications.",
+  "requestFramePermissions": ["notifications", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
