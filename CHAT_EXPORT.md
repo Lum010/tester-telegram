@@ -13,6 +13,7 @@
    - [Turn 2: Git Repository Initialization & GitHub Push](#turn-2-git-repository-initialization--github-push)
    - [Turn 3: Serverless Endpoints (/api) & BotFather Bridge](#turn-3-serverless-endpoints-api--botfather-bridge)
    - [Turn 4: Removal of Sora API & Amended Telegram API Connection](#turn-4-removal-of-sora-api--amended-telegram-api-connection)
+   - [Turn 5: Limiting Event Radar and Search to Singapore](#turn-5-limiting-event-radar-and-search-to-singapore)
 3. [Serverless Architecture & Endpoints Documentation](#serverless-architecture--endpoints-documentation)
    - [/api/health.ts](#apihealthts)
    - [/api/telegram.ts](#apitelegramts)
@@ -125,6 +126,40 @@ This session developed a complete, production-grade mobile web application integ
    - **Clear Real-time Status**: When disconnected, `TelegramHeader` displays an amber indicator with a direct "Not Connected (Link Bot)" alert banner.
 3. **Verification**:
    - Validated build via `compile_applet` and type-checked via `lint_applet` with 0 errors.
+
+---
+
+### Turn 5: Limiting Event Radar and Search to Singapore
+
+#### User Prompt:
+> *"limit search to Singapore"*
+
+#### Assistant Plan & Execution:
+1. **Singapore Venues & Events Dataset (`src/data/mockEvents.ts`)**:
+   - Replaced global events with Singapore concerts and festivals:
+     - **ZoukOut Singapore 2026** (Siloso Beach, Sentosa / Electronic, House)
+     - **Coldplay: Music of the Spheres (Encore Residency)** (National Stadium, Singapore Sports Hub)
+     - **Pasir Panjang Power Station: Industrial Techno Marathon** (Pasir Panjang Power Station)
+     - **Grand Prix Season Singapore: Padang Live Concerts** (Padang Stage, Marina Bay)
+     - **Dua Lipa: Radical Optimism Tour Singapore** (Singapore Indoor Stadium, Kallang)
+     - **Skechers Sundown Festival 2026** (Pasir Panjang Power Station Grounds)
+     - **Esplanade Mosaic Sessions: Kamasi Washington** (Esplanade Concert Hall)
+     - **Neon Lights Music & Arts Festival** (Fort Canning Green)
+     - **Marquee Singapore: Tiësto Resident Night** (Marina Bay Sands)
+     - **Sunset Tribe: Keinemusik (&ME & Rampa)** (Palawan Green, Sentosa)
+     - **Wave to Earth & The Poles** (Capitol Theatre)
+     - **Deftones: Asia Tour 2026** (The Star Theatre, Buona Vista)
+   - Currency converted to Singapore Dollars (`SGD` / `S$`).
+   - Regional zones defined: *All Singapore*, *Sentosa & HarbourFront*, *Marina Bay & Downtown*, *Kallang & Sports Hub*, *Pasir Panjang & West*, *Civic District & Esplanade*, *Fort Canning & Orchard*.
+2. **Singapore Natural Language Query Parsing (`src/services/botEngine.ts`)**:
+   - Bot welcome message and slash commands updated for Singapore.
+   - Intelligent keyword matcher updated for Singapore venues and landmarks (`sentosa`, `kallang`, `marina bay`, `pasir panjang`, `esplanade`, `fort canning`, `padang`, `siloso`, `sports hub`, `indoor stadium`, `national stadium`).
+3. **UI & Filter Customizations (`TrendingEventsView.tsx`, `AlertFiltersView.tsx`, `App.tsx`)**:
+   - Quick prompts: `🇸🇬 ZoukOut Sentosa`, `🏟️ National Stadium`, `⚡ Pasir Panjang Techno`, `Under S$100 🏷️`.
+   - Radius slider scaled to 5 km – 50 km (Singapore island dimensions).
+   - Default filter selection set to `All Singapore`.
+4. **Verification**:
+   - Validated via `compile_applet` and `lint_applet` with 0 errors.
 
 ---
 

@@ -39,8 +39,8 @@ export const AlertFiltersView: React.FC<AlertFiltersViewProps> = ({
   // New filter form state
   const [name, setName] = useState('');
   const [selectedGenres, setSelectedGenres] = useState<EventGenre[]>(['Electronic', 'Techno']);
-  const [city, setCity] = useState('All Cities');
-  const [radiusKm, setRadiusKm] = useState(75);
+  const [city, setCity] = useState('All Singapore');
+  const [radiusKm, setRadiusKm] = useState(15);
   const [dateRangeType, setDateRangeType] = useState<DateRangePreset>('this_month');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -76,8 +76,8 @@ export const AlertFiltersView: React.FC<AlertFiltersViewProps> = ({
       },
       () => {
         setLocatingUser(false);
-        // Fallback to nearest hub
-        setCity('New York');
+        // Fallback to Singapore central hub
+        setCity('All Singapore');
       },
       { timeout: 5000 }
     );
@@ -295,9 +295,9 @@ export const AlertFiltersView: React.FC<AlertFiltersViewProps> = ({
                   <span className="text-[11px] text-[#798b9b] whitespace-nowrap">Radius:</span>
                   <input
                     type="range"
-                    min="10"
-                    max="300"
-                    step="10"
+                    min="5"
+                    max="50"
+                    step="5"
                     value={radiusKm}
                     onChange={(e) => setRadiusKm(parseInt(e.target.value, 10))}
                     className="w-full accent-sky-500 cursor-pointer"
@@ -366,7 +366,7 @@ export const AlertFiltersView: React.FC<AlertFiltersViewProps> = ({
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-slate-300">Max Ticket Price Ceiling</span>
                 <span className="font-mono text-emerald-400 font-bold">
-                  {maxPrice === null ? 'Any Price' : `$${maxPrice}`}
+                  {maxPrice === null ? 'Any Price' : `S$ ${maxPrice}`}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -384,9 +384,9 @@ export const AlertFiltersView: React.FC<AlertFiltersViewProps> = ({
                 />
               </div>
               <div className="flex justify-between text-[10px] text-[#798b9b]">
-                <span>$30 (Budget)</span>
-                <span>$150 (Mid)</span>
-                <span>$400+ (No Limit)</span>
+                <span>S$ 30 (Club)</span>
+                <span>S$ 150 (Concert)</span>
+                <span>S$ 400+ (VIP)</span>
               </div>
             </div>
 
@@ -508,7 +508,7 @@ export const AlertFiltersView: React.FC<AlertFiltersViewProps> = ({
                     {filter.maxPrice && (
                       <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#0e1621] text-emerald-400 border border-[#242f3d]">
                         <DollarSign className="w-3 h-3" />
-                        <span>Max ${filter.maxPrice}</span>
+                        <span>Max S$ {filter.maxPrice}</span>
                       </span>
                     )}
                   </div>

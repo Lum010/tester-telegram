@@ -34,18 +34,18 @@ export const TrendingEventsView: React.FC<TrendingEventsViewProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
-  const [selectedCity, setSelectedCity] = useState<string>('All Cities');
+  const [selectedCity, setSelectedCity] = useState<string>('All Singapore');
   const [selectedType, setSelectedType] = useState<'all' | 'festival' | 'concert'>('all');
   const [selectedTimeframe, setSelectedTimeframe] = useState<'all' | 'weekend' | 'month'>('all');
   const [alertSentMap, setAlertSentMap] = useState<Record<string, boolean>>({});
 
   // Quick prompt chips
   const quickPrompts = [
-    { label: '🔥 Trending This Month', query: '/trending' },
-    { label: 'Berlin Techno 🎧', query: 'techno in berlin' },
-    { label: '🎪 Big Festivals', query: '/festivals' },
-    { label: 'London Indie Gigs 🎸', query: 'indie rock in london' },
-    { label: 'Under $100 🏷️', query: 'events under 100' },
+    { label: '🔥 Trending in SG', query: '/trending' },
+    { label: '🇸🇬 ZoukOut Sentosa', query: 'zoukout sentosa' },
+    { label: '🏟️ National Stadium', query: 'national stadium' },
+    { label: '⚡ Pasir Panjang Techno', query: 'pasir panjang techno' },
+    { label: 'Under S$100 🏷️', query: 'events under 100' },
   ];
 
   const filteredEvents = useMemo(() => {
@@ -59,7 +59,7 @@ export const TrendingEventsView: React.FC<TrendingEventsViewProps> = ({
       }
 
       // City filter
-      if (selectedCity !== 'All Cities' && e.city !== selectedCity) {
+      if (selectedCity !== 'All Singapore' && selectedCity !== 'All Cities' && e.city !== selectedCity) {
         return false;
       }
 
@@ -113,7 +113,7 @@ export const TrendingEventsView: React.FC<TrendingEventsViewProps> = ({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search artist, festival, venue, or genre..."
+          placeholder="Search concerts & festivals in Singapore (e.g. ZoukOut, Coldplay)..."
           className="w-full bg-[#17212b] border border-[#242f3d] rounded-2xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-[#798b9b] focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all shadow-inner"
         />
         {searchQuery && (
@@ -262,7 +262,7 @@ export const TrendingEventsView: React.FC<TrendingEventsViewProps> = ({
               onClick={() => {
                 setSearchQuery('');
                 setSelectedGenre('All');
-                setSelectedCity('All Cities');
+                setSelectedCity('All Singapore');
                 setSelectedType('all');
                 setSelectedTimeframe('all');
               }}

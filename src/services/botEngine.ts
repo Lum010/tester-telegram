@@ -19,24 +19,24 @@ export function processUserQuery(rawInput: string): BotQueryResult {
   // 1. Slash commands
   if (query === '/start' || query === 'start') {
     return {
-      replyText: `👋 <b>Welcome to PulseFest Radar Bot!</b> 🎵
+      replyText: `👋 <b>Welcome to PulseFest Singapore Radar Bot!</b> 🇸🇬 🎵
 
-I track live concert announcements, festival drops, and ticket releases in real-time.
+I track live concerts, stadium tours, and music festival ticket drops across Singapore in real-time.
 
 <b>What can I do for you?</b>
-• Tap <b>🔥 Trending</b> to see the hottest festivals
-• Ask naturally: <i>"Show me techno in Berlin"</i> or <i>"Indie concerts in London under £80"</i>
-• Set customizable radar push alerts to your Telegram chat
+• Tap <b>🔥 Trending in SG</b> to see high-demand shows
+• Ask naturally: <i>"ZoukOut Sentosa tickets"</i> or <i>"Techno at Pasir Panjang under S$100"</i>
+• Set customizable radar push alerts directly to your Telegram chat
 
 Choose a quick action below:`,
       matchedEvents: MOCK_EVENTS.filter((e) => e.isTrending).slice(0, 3),
       inlineKeyboard: [
         [
-          { text: '🔥 Trending Worldwide', callback_data: 'cmd_trending' },
-          { text: '🎪 All Festivals', callback_data: 'cmd_festivals' },
+          { text: '🔥 Trending in Singapore', callback_data: 'cmd_trending' },
+          { text: '🎪 SG Festivals', callback_data: 'cmd_festivals' },
         ],
         [
-          { text: '📍 Concerts Near Me', callback_data: 'cmd_near_me' },
+          { text: '🏟️ National Stadium Gigs', callback_data: 'cmd_stadium' },
           { text: '🔔 Configure Alert Filters', callback_data: 'cmd_filters' },
         ],
       ],
@@ -45,15 +45,15 @@ Choose a quick action below:`,
 
   if (query === '/help' || query === 'help') {
     return {
-      replyText: `ℹ️ <b>PulseFest Bot Commands & Tips</b>
+      replyText: `ℹ️ <b>PulseFest Singapore Commands & Tips</b>
 
-• <code>/trending</code> - Top viral festivals and high-demand tours
-• <code>/festivals</code> - Multi-day outdoor music festivals
-• <code>/concerts [city]</code> - Local headline gigs
-• <code>/alerts</code> - List your active radar notification rules
-• <code>/filter [genre]</code> - Filter by genre (Techno, Indie, Hip-Hop...)
+• <code>/trending</code> - Top viral concerts & festivals in Singapore
+• <code>/festivals</code> - Outdoor festivals (ZoukOut, Sundown, F1, Neon Lights)
+• <code>/concerts [venue]</code> - Headline gigs (National Stadium, Esplanade, Star Theatre)
+• <code>/alerts</code> - Manage your active Singapore radar notification rules
+• <code>/filter [genre]</code> - Filter by genre (Techno, Indie, Pop, EDM...)
 
-💡 <i>Tip: You can also type natural queries like "Rock gigs in London this weekend"!</i>`,
+💡 <i>Tip: You can also ask "Any techno at Pasir Panjang this month?"</i>`,
       matchedEvents: [],
       inlineKeyboard: [
         [
@@ -69,12 +69,12 @@ Choose a quick action below:`,
     const summary = trending
       .map(
         (e, i) =>
-          `${i + 1}. <b>${e.title}</b> (${e.city})\n   🗓 ${e.displayDate} • From ${e.currency} ${e.priceFrom}\n   🏷 <i>${e.genres.join(', ')}</i>`
+          `${i + 1}. <b>${e.title}</b>\n   📍 ${e.venue} (${e.city})\n   🗓 ${e.displayDate} • From S$ ${e.priceFrom}\n   🏷 <i>${e.genres.join(', ')}</i>`
       )
       .join('\n\n');
 
     return {
-      replyText: `🔥 <b>TOP TRENDING EVENTS RIGHT NOW:</b>\n\n${summary}\n\nTap below to explore or set push alerts for these events:`,
+      replyText: `🔥 <b>TOP TRENDING EVENTS IN SINGAPORE RIGHT NOW:</b>\n\n${summary}\n\nTap below to explore or set push alerts for these shows:`,
       matchedEvents: trending,
       inlineKeyboard: [
         [
@@ -88,7 +88,7 @@ Choose a quick action below:`,
   if (query === '/festivals' || query.includes('festival') || query.includes('fest')) {
     const fests = MOCK_EVENTS.filter((e) => e.type === 'festival');
     return {
-      replyText: `🎪 <b>Top Festivals on Radar:</b> Found ${fests.length} multi-day festivals.\n\nHere are the top picks with tickets selling fast:`,
+      replyText: `🎪 <b>Top Festivals in Singapore:</b> Found ${fests.length} upcoming music festivals (ZoukOut, Sundown, F1 Padang, Neon Lights).\n\nHere are the top picks with tickets selling fast:`,
       matchedEvents: fests,
       inlineKeyboard: [
         [
@@ -101,7 +101,7 @@ Choose a quick action below:`,
 
   if (query === '/alerts' || query === 'my alerts' || query.includes('alert')) {
     return {
-      replyText: `🔔 <b>Your Radar Alert Settings</b>\n\nPulseFest monitors official ticket outlets & organizers every 5 minutes.\n\nWhen a match occurs, an instant notification is dispatched to your Telegram chat ID!`,
+      replyText: `🔔 <b>Your Singapore Radar Alert Settings</b>\n\nPulseFest monitors official Singapore ticket outlets (SISTIC, Ticketmaster SG, Live Nation) every 5 minutes.\n\nWhen a match occurs, an instant notification is dispatched to your Telegram chat!`,
       matchedEvents: [],
       inlineKeyboard: [
         [
@@ -113,12 +113,27 @@ Choose a quick action below:`,
   }
 
   // 2. Natural language parsing:
-  // Detect city
+  // Detect Singapore locations and venues
   let matchedCity: string | null = null;
-  const cityKeywords = ['london', 'berlin', 'amsterdam', 'new york', 'paris', 'tokyo', 'austin', 'miami', 'chicago', 'denver', 'los angeles'];
-  for (const c of cityKeywords) {
-    if (query.includes(c)) {
-      matchedCity = c;
+  const sgLocationKeywords = [
+    'sentosa',
+    'kallang',
+    'marina bay',
+    'pasir panjang',
+    'esplanade',
+    'fort canning',
+    'siloso',
+    'padang',
+    'orchard',
+    'star theatre',
+    'indoor stadium',
+    'national stadium',
+    'singapore',
+  ];
+
+  for (const loc of sgLocationKeywords) {
+    if (query.includes(loc)) {
+      matchedCity = loc;
       break;
     }
   }
@@ -134,7 +149,7 @@ Choose a quick action below:`,
 
   // Detect budget
   let maxBudget: number | null = null;
-  const budgetMatch = query.match(/(?:under|below|max|less than|<|\$|£|€)\s*(\d+)/i);
+  const budgetMatch = query.match(/(?:under|below|max|less than|<|\$|s\$|sgd)\s*(\d+)/i);
   if (budgetMatch && budgetMatch[1]) {
     maxBudget = parseInt(budgetMatch[1], 10);
   }
@@ -143,8 +158,12 @@ Choose a quick action below:`,
   let filtered = MOCK_EVENTS.filter((e) => {
     let matches = true;
 
-    if (matchedCity) {
-      matches = matches && e.city.toLowerCase().includes(matchedCity);
+    if (matchedCity && matchedCity !== 'singapore') {
+      const cityOrVenueMatch =
+        e.city.toLowerCase().includes(matchedCity) ||
+        e.venue.toLowerCase().includes(matchedCity) ||
+        e.title.toLowerCase().includes(matchedCity);
+      matches = matches && cityOrVenueMatch;
     }
 
     if (matchedGenres.length > 0) {
@@ -174,43 +193,43 @@ Choose a quick action below:`,
   if (filtered.length > 0) {
     const summaryLines = filtered
       .slice(0, 4)
-      .map((e) => `• <b>${e.title}</b> (${e.city}) — ${e.displayDate}\n  🎫 From ${e.currency} ${e.priceFrom} [${e.ticketStatus}]`)
+      .map((e) => `• <b>${e.title}</b>\n  📍 ${e.venue} — ${e.displayDate}\n  🎫 From S$ ${e.priceFrom} [${e.ticketStatus}]`)
       .join('\n\n');
 
     const filterDescriptor = [
       matchedGenres.length ? matchedGenres.join('/') : '',
-      matchedCity ? `in ${matchedCity.toUpperCase()}` : '',
-      maxBudget ? `under ${maxBudget}` : '',
+      matchedCity ? `in ${matchedCity.toUpperCase()}` : 'in Singapore',
+      maxBudget ? `under S$${maxBudget}` : '',
     ]
       .filter(Boolean)
       .join(' ');
 
     return {
-      replyText: `🎯 <b>Found ${filtered.length} matched event${filtered.length > 1 ? 's' : ''}</b> ${filterDescriptor ? `for <i>"${filterDescriptor}"</i>` : ''}:\n\n${summaryLines}\n\nWould you like me to set a continuous radar alert for this search?`,
+      replyText: `🎯 <b>Found ${filtered.length} matched event${filtered.length > 1 ? 's' : ''} in Singapore</b> ${filterDescriptor ? `for <i>"${filterDescriptor}"</i>` : ''}:\n\n${summaryLines}\n\nWould you like me to set a continuous radar alert for this search?`,
       matchedEvents: filtered,
       inlineKeyboard: [
         [
-          { text: `🔔 Alert me for ${matchedCity || 'these'} events`, callback_data: `quick_alert_${matchedCity || 'custom'}` },
+          { text: `🔔 Alert me for ${matchedCity || 'Singapore'} shows`, callback_data: `quick_alert_${matchedCity || 'singapore'}` },
           { text: '🎟️ Check Availability', callback_data: `details_${filtered[0].id}` },
         ],
       ],
       suggestedFilter: {
-        name: `${matchedGenres.join(', ') || 'Live Events'} in ${matchedCity || 'All Cities'}`,
-        city: matchedCity ? matchedCity.charAt(0).toUpperCase() + matchedCity.slice(1) : 'All Cities',
-        genres: matchedGenres.length > 0 ? matchedGenres : ['Electronic', 'Indie'],
+        name: `${matchedGenres.join(', ') || 'Live Events'} in Singapore`,
+        city: 'All Singapore',
+        genres: matchedGenres.length > 0 ? matchedGenres : ['Electronic', 'Pop'],
         maxPrice: maxBudget || undefined,
       },
     };
   }
 
-  // Fallback: If nothing matched specifically, return trending recommendations
+  // Fallback: If nothing matched specifically, return top Singapore recommendations
   const fallback = MOCK_EVENTS.slice(0, 3);
   return {
-    replyText: `🔍 I couldn't find exact matches for <i>"${rawInput}"</i>, but here are the <b>most popular upcoming events</b> worldwide right now:\n\n• <b>Ultra Music Festival</b> (Miami, EDM)\n• <b>Amsterdam Dance Event</b> (Amsterdam, Techno)\n• <b>RÜFÜS DU SOL</b> (New York, Electronic)\n\nTry searching by genre (e.g. <i>"Techno"</i>, <i>"Indie"</i>) or city (e.g. <i>"London"</i>, <i>"Berlin"</i>).`,
+    replyText: `🔍 I couldn't find exact matches for <i>"${rawInput}"</i> in Singapore, but here are the <b>most popular upcoming shows</b> on the island:\n\n• <b>ZoukOut Singapore</b> (Siloso Beach, Sentosa)\n• <b>Coldplay: Music of the Spheres</b> (National Stadium)\n• <b>Pasir Panjang Industrial Techno Marathon</b> (Pasir Panjang)\n\nTry searching for venues like <i>"Sentosa"</i>, <i>"National Stadium"</i>, or genres like <i>"Techno"</i>, <i>"Indie"</i>.`,
     matchedEvents: fallback,
     inlineKeyboard: [
       [
-        { text: '⚡ View All Events', callback_data: 'view_all_events' },
+        { text: '⚡ View All Singapore Shows', callback_data: 'view_all_events' },
         { text: '🎧 Explore by Genre', callback_data: 'explore_genres' },
       ],
     ],
@@ -222,11 +241,11 @@ export function createWelcomeMessages(): TelegramMessage[] {
     {
       id: 'msg-welcome-1',
       from: 'bot',
-      text: `👋 <b>Welcome to PulseFest Radar Bot!</b> 🎵
+      text: `👋 <b>Welcome to PulseFest Singapore Live Radar!</b> 🇸🇬 🎵
 
-I'm linked to the Telegram Bot API framework to deliver instant push alerts for concerts and music festivals right into your chat.
+I'm linked to the Telegram Bot API framework to deliver instant push alerts for concerts, stadium gigs, and music festivals in Singapore right into your chat.
 
-You can ask me for trending shows, or customize alert filters for your favorite genres, cities, and ticket price ceilings.`,
+You can ask me for trending Singapore shows, or customize alert filters for your favorite genres, venues, and ticket price ceilings.`,
       timestamp: '12:00',
       dateIso: new Date().toISOString(),
       status: 'read',
@@ -234,8 +253,8 @@ You can ask me for trending shows, or customize alert filters for your favorite 
       reply_markup: {
         inline_keyboard: [
           [
-            { text: '🔥 Trending Events Now', callback_data: 'cmd_trending' },
-            { text: '🎪 Multi-day Festivals', callback_data: 'cmd_festivals' },
+            { text: '🔥 Trending in Singapore', callback_data: 'cmd_trending' },
+            { text: '🎪 SG Festivals (ZoukOut & F1)', callback_data: 'cmd_festivals' },
           ],
           [
             { text: '🔔 Create Push Alert', callback_data: 'cmd_filters' },

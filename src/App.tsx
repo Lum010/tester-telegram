@@ -56,30 +56,30 @@ export default function App() {
   const [notifications, setNotifications] = useState<PushAlertNotification[]>([
     {
       id: 'notif-init-1',
-      eventId: 'evt-ultra-2026',
-      eventTitle: 'Ultra Music Festival 2026',
+      eventId: 'evt-zoukout-2026',
+      eventTitle: 'ZoukOut Singapore 2026: The Tribe Returns',
       eventType: 'festival',
-      city: 'Miami',
-      venue: 'Bayfront Park',
-      displayDate: 'Oct 16 - 18, 2026',
-      genres: ['Electronic', 'Techno'],
-      priceFrom: 349,
-      filterName: 'Top US EDM & Indie Festivals',
+      city: 'Sentosa & HarbourFront',
+      venue: 'Siloso Beach, Sentosa',
+      displayDate: 'Oct 17 - 18, 2026',
+      genres: ['Electronic', 'House'],
+      priceFrom: 188,
+      filterName: 'Sentosa & Beach EDM Radar',
       timestamp: '18:15',
       read: false,
       telegramDelivered: true,
     },
     {
       id: 'notif-init-2',
-      eventId: 'evt-berghain-klubnacht',
-      eventTitle: 'Berghain Klubnacht Marathon',
+      eventId: 'evt-national-stadium-coldplay',
+      eventTitle: 'Coldplay: Music of the Spheres (Encore Residency)',
       eventType: 'concert',
-      city: 'Berlin',
-      venue: 'Berghain / Panorama Bar',
-      displayDate: 'Oct 10 - 12, 2026',
-      genres: ['Techno', 'Electronic'],
-      priceFrom: 28,
-      filterName: 'Berlin & Amsterdam Underground',
+      city: 'Kallang & Sports Hub',
+      venue: 'National Stadium (Singapore Sports Hub)',
+      displayDate: 'Oct 23 - 25, 2026',
+      genres: ['Rock', 'Pop'],
+      priceFrom: 98,
+      filterName: 'National Stadium & Kallang Gigs',
       timestamp: '17:42',
       read: false,
       telegramDelivered: true,
@@ -276,7 +276,10 @@ export default function App() {
 
     // Test run check against existing events
     const matches = events.filter((e) => {
-      const matchesCity = newFilter.city === 'All Cities' || e.city.toLowerCase().includes(newFilter.city.toLowerCase());
+      const matchesCity =
+        newFilter.city === 'All Singapore' ||
+        newFilter.city === 'All Cities' ||
+        e.city.toLowerCase().includes(newFilter.city.toLowerCase());
       const matchesGenre = e.genres.some((g) => newFilter.genres.includes(g));
       const matchesPrice = newFilter.maxPrice === null || e.priceFrom <= newFilter.maxPrice;
       return matchesCity && matchesGenre && matchesPrice;
