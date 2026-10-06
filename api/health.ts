@@ -9,7 +9,6 @@ interface HealthResponse {
   environment: {
     telegramBotConfigured: boolean;
     telegramChatIdConfigured: boolean;
-    soraApiConfigured: boolean;
     geminiApiConfigured: boolean;
     nodeEnv: string;
   };
@@ -43,7 +42,6 @@ export default async function handler(
     environment: {
       telegramBotConfigured: Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_BOT_TOKEN.trim().length > 0),
       telegramChatIdConfigured: Boolean(process.env.TELEGRAM_CHAT_ID && process.env.TELEGRAM_CHAT_ID.trim().length > 0),
-      soraApiConfigured: Boolean(process.env.SORA_API_KEY && process.env.SORA_API_KEY.trim().length > 0),
       geminiApiConfigured: Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim().length > 0),
       nodeEnv: process.env.NODE_ENV || 'development',
     },

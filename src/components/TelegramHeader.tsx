@@ -33,25 +33,36 @@ export const TelegramHeader: React.FC<TelegramHeaderProps> = ({
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-600 via-blue-500 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
               <span className="text-lg font-black tracking-tight">PF</span>
             </div>
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#17212b] rounded-full"></span>
+            <span
+              className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-[#17212b] rounded-full ${
+                config.isConnected ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'
+              }`}
+            ></span>
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 cursor-pointer" onClick={onOpenSettings} title="Click to view Telegram API connection">
             <div className="flex items-center gap-1">
               <h1 className="text-sm font-bold text-white tracking-tight truncate">
                 PulseFest Radar
               </h1>
-              <ShieldCheck className="w-4 h-4 text-sky-400 flex-shrink-0" />
+              <ShieldCheck className={`w-4 h-4 flex-shrink-0 ${config.isConnected ? 'text-sky-400' : 'text-amber-400'}`} />
             </div>
             <div className="flex items-center gap-1.5 text-xs text-[#798b9b]">
-              <span className="text-sky-400 font-mono text-[11px]">
+              <span className="text-sky-400 font-mono text-[11px] truncate max-w-[120px]">
                 @{config.botUsername || 'PulseFestRadarBot'}
               </span>
               <span>•</span>
-              <span className="flex items-center gap-1 text-[11px] text-emerald-400">
-                <Radio className="w-3 h-3 animate-pulse" />
-                bot API online
-              </span>
+              {config.isConnected ? (
+                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+                  <Radio className="w-3 h-3 animate-pulse" />
+                  API Connected
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-[11px] text-amber-400 font-medium underline underline-offset-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                  Not Connected (Link Bot)
+                </span>
+              )}
             </div>
           </div>
         </div>

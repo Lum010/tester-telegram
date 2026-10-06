@@ -17,10 +17,6 @@ export default defineConfig(() => {
               const { default: handler } = await import('./api/health.ts');
               return handler(req as any, res as any);
             }
-            if (url.startsWith('/api/sora')) {
-              const { default: handler } = await import('./api/sora.ts');
-              return handler(req as any, res as any);
-            }
             if (url.startsWith('/api/telegram')) {
               const { default: handler } = await import('./api/telegram.ts');
               return handler(req as any, res as any);

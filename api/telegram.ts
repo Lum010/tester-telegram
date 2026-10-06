@@ -29,6 +29,26 @@ export default async function handler(
   const defaultToken = process.env.TELEGRAM_BOT_TOKEN || '';
   const defaultChatId = process.env.TELEGRAM_CHAT_ID || '';
 
+  // Handle CORS preflight OPTIONS request
+  if (method === 'OPTIONS') {
+    if (res && typeof res.setHeader === 'function') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.statusCode = 204;
+      res.end();
+      return;
+    }
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
+
   // GET: Health check & BotFather configuration status
   if (method === 'GET') {
     const isConfigured = Boolean(defaultToken.trim());
@@ -40,6 +60,8 @@ export default async function handler(
         const tgData = await tgRes.json();
         if (tgData.ok) {
           botInfo = tgData.result;
+        } else {
+          botInfo = { ok: false, description: tgData.description };
         }
       } catch (err: any) {
         botInfo = { error: err.message };
@@ -48,7 +70,7 @@ export default async function handler(
 
     const payload = {
       service: 'telegram-botfather-bridge',
-      status: isConfigured ? 'configured' : 'pending_configuration',
+      status: isConfigured && botInfo?.username ? 'connected' : isConfigured ? 'error' : 'disconnected',
       tokenConfigured: isConfigured,
       defaultChatIdConfigured: Boolean(defaultChatId.trim()),
       botInfo,
@@ -60,10 +82,11 @@ export default async function handler(
       },
       note: isConfigured
         ? 'Telegram Bot token detected from environment variables.'
-        : 'Please set TELEGRAM_BOT_TOKEN in your environment variables.',
+        : 'Please set TELEGRAM_BOT_TOKEN in your environment variables or in the UI.',
     };
 
     if (res && typeof res.setHeader === 'function') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Content-Type', 'application/json');
       res.statusCode = 200;
       res.end(JSON.stringify(payload, null, 2));
@@ -71,7 +94,10 @@ export default async function handler(
     }
     return new Response(JSON.stringify(payload, null, 2), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+      },
     });
   }
 
@@ -189,6 +215,7 @@ export default async function handler(
       const tgData = await tgRes.json();
 
       if (res && typeof res.setHeader === 'function') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json');
         res.statusCode = tgRes.ok ? 200 : 400;
         res.end(JSON.stringify(tgData, null, 2));
@@ -196,7 +223,10 @@ export default async function handler(
       }
       return new Response(JSON.stringify(tgData, null, 2), {
         status: tgRes.ok ? 200 : 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json',
+        },
       });
     } catch (err: any) {
       const errPayload = {
@@ -205,22 +235,36 @@ export default async function handler(
         message: err.message,
       };
       if (res && typeof res.setHeader === 'function') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', 'application/json');
         res.statusCode = 502;
         res.end(JSON.stringify(errPayload));
         return;
       }
-      return new Response(JSON.stringify(errPayload), { status: 502 });
+      return new Response(JSON.stringify(errPayload), {
+        status: 502,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json',
+        },
+      });
     }
   }
 
   // Method not allowed
   if (res && typeof res.setHeader === 'function') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.statusCode = 405;
     res.end(JSON.stringify({ error: 'Method not allowed' }));
     return;
   }
-  return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+  return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+    status: 405,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Content-Type': 'application/json',
+    },
+  });
 }
 
 function readBody(req: IncomingMessage): Promise<string> {

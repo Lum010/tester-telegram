@@ -53,7 +53,34 @@ export const TelegramApiConfigModal: React.FC<TelegramApiConfigModalProps> = ({
     soundService.triggerHaptic([20]);
 
     try {
-      const res = await telegramBotService.getMe(token || 'DEMO_TOKEN');
+      const tokenToTest = token.trim();
+
+      // If empty token, check if the backend environment variable is configured
+      if (!tokenToTest) {
+        const serverStatus = await telegramBotService.checkServerStatus();
+        if (serverStatus.connected && serverStatus.botUsername) {
+          soundService.playTelegramChime();
+          setTestResult({
+            ok: true,
+            msg: `Successfully connected via server environment variable!`,
+            botName: serverStatus.botUsername,
+          });
+          onUpdateConfig({
+            botUsername: serverStatus.botUsername,
+            isConnected: true,
+            lastConnectedAt: new Date().toLocaleTimeString(),
+          });
+          return;
+        } else {
+          setTestResult({
+            ok: false,
+            msg: 'No token entered and TELEGRAM_BOT_TOKEN is not configured in environment variables. Please paste your token from @BotFather.',
+          });
+          return;
+        }
+      }
+
+      const res = await telegramBotService.getMe(tokenToTest);
       if (res.ok && res.user) {
         soundService.playTelegramChime();
         setTestResult({
@@ -61,22 +88,35 @@ export const TelegramApiConfigModal: React.FC<TelegramApiConfigModalProps> = ({
           msg: `Successfully connected to Telegram Bot API!`,
           botName: res.user.username,
         });
+
+        // Persist token and chatId in localStorage
+        try {
+          localStorage.setItem('pulsefest_bot_token', tokenToTest);
+          if (chatId.trim()) localStorage.setItem('pulsefest_chat_id', chatId.trim());
+        } catch {
+          // localStorage blocked
+        }
+
         onUpdateConfig({
-          botToken: token,
+          botToken: tokenToTest,
           botUsername: res.user.username,
-          chatId,
+          chatId: chatId.trim(),
           isConnected: true,
           lastConnectedAt: new Date().toLocaleTimeString(),
         });
       } else {
         setTestResult({
           ok: false,
-          msg: res.error || 'Failed to authenticate Telegram Bot token',
+          msg: res.error || 'Failed to authenticate Telegram Bot token with Telegram servers.',
+        });
+        onUpdateConfig({
+          isConnected: false,
         });
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Connection failed';
       setTestResult({ ok: false, msg });
+      onUpdateConfig({ isConnected: false });
     } finally {
       setTesting(false);
     }
@@ -88,6 +128,10 @@ export const TelegramApiConfigModal: React.FC<TelegramApiConfigModalProps> = ({
     const demoChatId = '789123456';
     setToken(demoToken);
     setChatId(demoChatId);
+    try {
+      localStorage.setItem('pulsefest_bot_token', demoToken);
+      localStorage.setItem('pulsefest_chat_id', demoChatId);
+    } catch {}
     onUpdateConfig({
       botToken: demoToken,
       botUsername: 'PulseFestRadarBot',
@@ -102,12 +146,25 @@ export const TelegramApiConfigModal: React.FC<TelegramApiConfigModalProps> = ({
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     soundService.triggerHaptic([15]);
-    onUpdateConfig({
-      botToken: token,
-      chatId,
-    });
+    const cleanToken = token.trim();
+    const cleanChat = chatId.trim();
+
+    try {
+      if (cleanToken) localStorage.setItem('pulsefest_bot_token', cleanToken);
+      if (cleanChat) localStorage.setItem('pulsefest_chat_id', cleanChat);
+    } catch {}
+
+    if (cleanToken) {
+      await handleTestConnection();
+    } else {
+      onUpdateConfig({
+        botToken: '',
+        chatId: cleanChat,
+      });
+    }
+
     if (onClose) onClose();
   };
 

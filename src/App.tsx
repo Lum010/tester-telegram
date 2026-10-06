@@ -29,15 +29,24 @@ export default function App() {
   const [filters, setFilters] = useState<AlertFilter[]>(INITIAL_FILTERS);
 
   // Telegram Bot API configuration
-  const [telegramConfig, setTelegramConfig] = useState<TelegramConfig>({
-    botToken: 'DEMO_719283749:AAFn4kdL98vX02_PulseFestKey',
-    botUsername: 'PulseFestRadarBot',
-    chatId: '789123456',
-    channelOrGroup: '@PulseFestRadar',
-    isConnected: true,
-    isTesting: false,
-    pollingActive: true,
-    useSimulationFallback: true,
+  const [telegramConfig, setTelegramConfig] = useState<TelegramConfig>(() => {
+    let savedToken = '';
+    let savedChat = '';
+    try {
+      savedToken = localStorage.getItem('pulsefest_bot_token') || '';
+      savedChat = localStorage.getItem('pulsefest_chat_id') || '';
+    } catch {}
+
+    return {
+      botToken: savedToken,
+      botUsername: 'PulseFestRadarBot',
+      chatId: savedChat,
+      channelOrGroup: '@PulseFestRadar',
+      isConnected: false,
+      isTesting: false,
+      pollingActive: false,
+      useSimulationFallback: true,
+    };
   });
 
   // Telegram bot messages history
@@ -86,6 +95,41 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [theme, setTheme] = useState<'dark' | 'midnight' | 'light'>('dark');
   const [isMobileFramed, setIsMobileFramed] = useState(false);
+
+  // Auto-verify and connect Telegram Bot API on mount
+  useEffect(() => {
+    async function initTelegramConnection() {
+      // 1. First check if backend has TELEGRAM_BOT_TOKEN set in environment
+      const serverStatus = await telegramBotService.checkServerStatus();
+      if (serverStatus.connected && serverStatus.botUsername) {
+        setTelegramConfig((prev) => ({
+          ...prev,
+          botUsername: serverStatus.botUsername || prev.botUsername,
+          isConnected: true,
+          pollingActive: true,
+        }));
+        return;
+      }
+
+      // 2. If client has a saved token in localStorage, test it
+      const savedToken = telegramConfig.botToken.trim();
+      if (savedToken) {
+        const verifyRes = await telegramBotService.getMe(savedToken);
+        if (verifyRes.ok && verifyRes.user) {
+          setTelegramConfig((prev) => ({
+            ...prev,
+            botUsername: verifyRes.user?.username || prev.botUsername,
+            isConnected: true,
+            pollingActive: true,
+          }));
+        } else {
+          setTelegramConfig((prev) => ({ ...prev, isConnected: false }));
+        }
+      }
+    }
+
+    initTelegramConnection();
+  }, []);
 
   // Subscribe to Telegram API telemetry logs
   useEffect(() => {
@@ -319,6 +363,22 @@ export default function App() {
           onToggleFrame={() => setIsMobileFramed(!isMobileFramed)}
           unreadCount={unreadAlertsCount}
         />
+
+        {/* Telegram Connection Alert Banner */}
+        {!telegramConfig.isConnected && (
+          <div
+            onClick={() => setIsConfigModalOpen(true)}
+            className="bg-amber-500/15 border-b border-amber-500/30 px-3.5 py-2 flex items-center justify-between cursor-pointer hover:bg-amber-500/25 transition-all text-xs text-amber-300 select-none"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              <span className="font-semibold">Telegram API Not Connected</span>
+            </div>
+            <span className="text-[11px] font-bold text-amber-200 underline underline-offset-2">
+              Link Bot Token →
+            </span>
+          </div>
+        )}
 
         {/* View Switcher Tabs */}
         <main className="min-h-[calc(100vh-120px)]">

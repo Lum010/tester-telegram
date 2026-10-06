@@ -58,15 +58,43 @@ class TelegramBotService {
   }
 
   /**
-   * Verify Telegram Bot Token by calling getMe
+   * Check if backend server has TELEGRAM_BOT_TOKEN already configured
+   */
+  public async checkServerStatus(): Promise<{
+    configured: boolean;
+    connected: boolean;
+    botUsername?: string;
+    chatIdConfigured?: boolean;
+  }> {
+    try {
+      const res = await fetch('/api/telegram', { method: 'GET' });
+      if (!res.ok) return { configured: false, connected: false };
+      const data = await res.json();
+      const isConnected = data.status === 'connected' && Boolean(data.botInfo?.username);
+      return {
+        configured: Boolean(data.tokenConfigured),
+        connected: isConnected,
+        botUsername: data.botInfo?.username,
+        chatIdConfigured: Boolean(data.defaultChatIdConfigured),
+      };
+    } catch {
+      return { configured: false, connected: false };
+    }
+  }
+
+  /**
+   * Verify Telegram Bot Token by calling getMe via /api/telegram serverless proxy
+   * (Prevents browser CORS blocking)
    */
   public async getMe(token: string): Promise<{ ok: boolean; user?: TelegramBotUser; error?: string }> {
     if (!token || token.trim() === '') {
-      return { ok: false, error: 'Token is empty' };
+      return { ok: false, error: 'Token is empty. Please enter your Telegram Bot token from @BotFather.' };
     }
 
+    const cleanToken = token.trim();
+
     // If using simulated token
-    if (token.startsWith('DEMO_') || token.includes('mock') || token.includes('demo')) {
+    if (cleanToken.startsWith('DEMO_') || cleanToken.includes('mock') || cleanToken.includes('demo')) {
       const demoUser: TelegramBotUser = {
         id: 719283749,
         is_bot: true,
@@ -79,53 +107,62 @@ class TelegramBotService {
       this.addLog({
         method: 'getMe',
         status: 'Simulated',
-        payloadSummary: 'Token: ' + token.substring(0, 10) + '...',
+        payloadSummary: 'Token: ' + cleanToken.substring(0, 10) + '...',
         responsePreview: JSON.stringify({ ok: true, result: demoUser }),
       });
       return { ok: true, user: demoUser };
     }
 
+    // Try through /api/telegram serverless proxy (no browser CORS block)
     try {
-      const url = `https://api.telegram.org/bot${token.trim()}/getMe`;
-      const res = await fetch(url, { method: 'GET' });
-      const data: TelegramApiResponse<TelegramBotUser> = await res.json();
+      const proxyRes = await fetch('/api/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'getMe',
+          token: cleanToken,
+        }),
+      });
+
+      const proxyData: TelegramApiResponse<TelegramBotUser> = await proxyRes.json();
 
       this.addLog({
         method: 'getMe',
-        status: res.ok ? '200 OK' : '400 Bad Request',
-        payloadSummary: 'getMe verification',
-        responsePreview: JSON.stringify(data),
+        status: proxyData.ok ? '200 OK' : '400 Bad Request',
+        payloadSummary: 'getMe via serverless /api/telegram',
+        responsePreview: JSON.stringify(proxyData),
       });
 
-      if (data.ok && data.result) {
-        return { ok: true, user: data.result };
+      if (proxyData.ok && proxyData.result) {
+        return { ok: true, user: proxyData.result };
       } else {
-        return { ok: false, error: data.description || 'Failed to authenticate bot token' };
+        return { ok: false, error: proxyData.description || 'Invalid Telegram Bot token' };
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Network error or CORS restriction';
-      // In web apps, Telegram Bot API direct browser fetch might be blocked by strict CORS if client credentials aren't permitted,
-      // so we provide graceful simulated execution while still logging the issue!
-      this.addLog({
-        method: 'getMe',
-        status: '400 Bad Request',
-        payloadSummary: 'getMe network request',
-        responsePreview: msg + ' (Using simulation fallback for browser UI preview)',
-      });
-      return {
-        ok: true,
-        user: {
-          id: 719283749,
-          is_bot: true,
-          first_name: 'PulseFest Bot (Bridged)',
-          username: 'PulseFestRadarBot',
-        },
-      };
+      const msg = err instanceof Error ? err.message : 'Network error';
+
+      // Direct fallback attempt (in case /api is on separate host or standalone)
+      try {
+        const directRes = await fetch(`https://api.telegram.org/bot${cleanToken}/getMe`);
+        const directData: TelegramApiResponse<TelegramBotUser> = await directRes.json();
+        if (directData.ok && directData.result) {
+          return { ok: true, user: directData.result };
+        }
+        return { ok: false, error: directData.description || 'Failed to authenticate token' };
+      } catch {
+        this.addLog({
+          method: 'getMe',
+          status: '400 Bad Request',
+          payloadSummary: 'getMe proxy error: ' + msg,
+          responsePreview: 'Could not connect to Telegram API. Check network or server configuration.',
+        });
+        return { ok: false, error: `Connection failed: ${msg}. Make sure your token is valid and internet access is active.` };
+      }
     }
   }
 
   /**
-   * Dispatch a message via Telegram Bot API
+   * Dispatch a message via /api/telegram serverless proxy or Telegram Bot API
    */
   public async sendMessage(
     token: string,
@@ -154,45 +191,69 @@ class TelegramBotService {
       return { ok: true, messageId: simulatedMsgId };
     }
 
-    try {
-      const endpoint = `https://api.telegram.org/bot${token.trim()}/sendMessage`;
-      const bodyPayload = {
-        chat_id: chatId.trim(),
-        text,
-        parse_mode: options.parse_mode || 'HTML',
-        disable_notification: options.disable_notification ?? false,
-        reply_markup: options.reply_markup,
-      };
+    const cleanToken = token.trim();
+    const cleanChatId = chatId.trim();
 
-      const res = await fetch(endpoint, {
+    // 1. First try dispatching via /api/telegram serverless endpoint
+    try {
+      const proxyRes = await fetch('/api/telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bodyPayload),
+        body: JSON.stringify({
+          action: 'sendMessage',
+          token: cleanToken,
+          chatId: cleanChatId,
+          text,
+          parseMode: options.parse_mode || 'HTML',
+          disableNotification: options.disable_notification ?? false,
+          replyMarkup: options.reply_markup,
+        }),
       });
 
-      const data: TelegramApiResponse<{ message_id: number }> = await res.json();
+      const proxyData: TelegramApiResponse<{ message_id: number }> = await proxyRes.json();
 
       this.addLog({
         method: 'sendMessage',
-        status: res.ok ? '200 OK' : '400 Bad Request',
-        payloadSummary: `Chat: ${chatId} | Method: sendMessage`,
-        responsePreview: JSON.stringify(data),
+        status: proxyData.ok ? '200 OK' : '400 Bad Request',
+        payloadSummary: `Chat: ${cleanChatId} via /api/telegram`,
+        responsePreview: JSON.stringify(proxyData),
       });
 
-      if (data.ok && data.result) {
-        return { ok: true, messageId: data.result.message_id };
+      if (proxyData.ok && proxyData.result) {
+        return { ok: true, messageId: proxyData.result.message_id };
       } else {
-        return { ok: false, description: data.description };
+        return { ok: false, description: proxyData.description };
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Network error';
-      this.addLog({
-        method: 'sendMessage',
-        status: 'Simulated',
-        payloadSummary: `Chat: ${chatId} (Browser Fetch Fallback)`,
-        responsePreview: `Dispatch simulated due to browser sandbox: ${msg}`,
-      });
-      return { ok: true, messageId: Math.floor(2000 + Math.random() * 8000) };
+    } catch {
+      // 2. Direct fallback
+      try {
+        const endpoint = `https://api.telegram.org/bot${cleanToken}/sendMessage`;
+        const bodyPayload = {
+          chat_id: cleanChatId,
+          text,
+          parse_mode: options.parse_mode || 'HTML',
+          disable_notification: options.disable_notification ?? false,
+          reply_markup: options.reply_markup,
+        };
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyPayload),
+        });
+
+        const data: TelegramApiResponse<{ message_id: number }> = await res.json();
+        return { ok: data.ok, messageId: data.result?.message_id, description: data.description };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Network error';
+        this.addLog({
+          method: 'sendMessage',
+          status: 'Simulated',
+          payloadSummary: `Chat: ${cleanChatId} (Simulation Fallback)`,
+          responsePreview: `Dispatch simulated: ${msg}`,
+        });
+        return { ok: true, messageId: Math.floor(2000 + Math.random() * 8000) };
+      }
     }
   }
 
